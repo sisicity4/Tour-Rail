@@ -1,13 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Waypoint, WalkMeta } from "../types";
+import { Waypoint, WalkMeta } from "../types.ts";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateWalkStory = async (path: Waypoint[]): Promise<WalkMeta> => {
   const model = "gemini-3-flash-preview";
   
-  // Create a simplified representation of the path for the prompt
   const pathSummary = path.map(p => `(${p.lat.toFixed(4)}, ${p.lng.toFixed(4)})`).join(" -> ");
 
   const prompt = `

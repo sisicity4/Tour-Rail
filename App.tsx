@@ -1,16 +1,13 @@
 
 import React, { useState, useCallback } from 'react';
-import { Waypoint, WalkMeta } from './types';
-import MapComponent from './components/MapComponent';
-import { generateWalkStory } from './services/geminiService';
+import { Waypoint } from './types.ts';
+import MapComponent from './components/MapComponent.tsx';
 
 const App: React.FC = () => {
   const [userPoints, setUserPoints] = useState<Waypoint[]>([]);
   const [snappedPath, setSnappedPath] = useState<Waypoint[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [duration, setDuration] = useState(2.0);
-  const [walkStory, setWalkStory] = useState<WalkMeta | null>(null);
-  const [isLoadingStory, setIsLoadingStory] = useState(false);
   const [isRouting, setIsRouting] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -60,33 +57,18 @@ const App: React.FC = () => {
     setUserPoints([]);
     setSnappedPath([]);
     setIsAnimating(false);
-    setWalkStory(null);
     setIsDrawerOpen(false);
   };
 
   const startAnimation = () => {
     if (snappedPath.length < 2) return;
     setIsAnimating(false);
-    // On mobile, close drawer to see the map better
     if (window.innerWidth < 768) setIsDrawerOpen(false);
     
     setTimeout(() => {
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), duration * 1000);
     }, 50);
-  };
-
-  const handleGenerateStory = async () => {
-    if (userPoints.length < 2) return;
-    setIsLoadingStory(true);
-    try {
-      const story = await generateWalkStory(userPoints);
-      setWalkStory(story);
-    } catch (error) {
-      console.error("Failed to generate story:", error);
-    } finally {
-      setIsLoadingStory(false);
-    }
   };
 
   const ControlPanel = () => (
@@ -142,49 +124,6 @@ const App: React.FC = () => {
             アニメーション再生
           </button>
         </div>
-      </div>
-
-      {/* AI Story Section */}
-      <div className="space-y-4 pt-4 border-t border-slate-100">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Walk Diary (AI)</h2>
-        
-        {!walkStory ? (
-          <button
-            onClick={handleGenerateStory}
-            disabled={userPoints.length < 2 || isLoadingStory || isRouting}
-            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-200"
-          >
-            {isLoadingStory ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                物語を作成中...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm12 1a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0V6h-1a1 1 0 110-2h1V3a1 1 0 011-1zM2.6 14.2a1 1 0 011.4 0l.3.3a1 1 0 010 1.4l-.3.3a1 1 0 01-1.4 0l-.3-.3a1 1 0 010-1.4l.3-.3zM14.5 8.8a1 1 0 010 1.4l-7.3 7.3a1 1 0 01-1.4 0l-.3-.3a1 1 0 010-1.4l7.3-7.3a1 1 0 011.4 0l.3.3z" clipRule="evenodd" />
-                </svg>
-                AI物語生成
-              </span>
-            )}
-          </button>
-        ) : (
-          <div className="bg-indigo-50 rounded-2xl p-5 border border-indigo-100 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-xs font-bold text-indigo-400 bg-white px-2 py-1 rounded shadow-sm">{walkStory.vibe}</span>
-              <button onClick={() => setWalkStory(null)} className="text-slate-400 hover:text-slate-600">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <h3 className="text-lg font-bold text-indigo-900 mb-2 leading-tight">{walkStory.title}</h3>
-            <p className="text-sm text-indigo-700 leading-relaxed italic">"{walkStory.description}"</p>
-          </div>
-        )}
       </div>
     </div>
   );

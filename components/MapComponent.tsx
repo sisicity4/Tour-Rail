@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Waypoint } from '../types';
+import { Waypoint } from '../types.ts';
 
 interface MapComponentProps {
   waypoints: Waypoint[];
@@ -21,7 +21,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const polylineRef = useRef<L.Polyline | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   
-  // Use a ref for the callback to prevent stale closures in Leaflet's event system
   const onAddWaypointRef = useRef(onAddWaypoint);
   useEffect(() => {
     onAddWaypointRef.current = onAddWaypoint;
@@ -40,7 +39,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current);
 
-    // Attach click event using the ref to call the latest function version
     mapRef.current.on('click', (e: L.LeafletMouseEvent) => {
       onAddWaypointRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
     });
@@ -93,7 +91,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         markersRef.current.push(endMarker);
       }
 
-      // Smoothly pan or fit bounds
       if (waypoints.length === 1 && !isAnimating) {
         mapRef.current.panTo(latlngs[0]);
       } else if (waypoints.length >= 2 && !isAnimating) {
