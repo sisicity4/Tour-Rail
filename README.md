@@ -87,7 +87,7 @@ If you deploy manually instead of using the Blueprint:
 - Backend build command: `pip install -r requirements.txt`
 - Backend start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 - Frontend root directory: `frontend`
-- Frontend build command: `npm install && npm run build`
+- Frontend build command: `npm ci && npm run build`
 - Frontend publish directory: `frontend/dist`
 
 For SPA routing on Render Static Sites, keep the rewrite rule from `render.yaml`.

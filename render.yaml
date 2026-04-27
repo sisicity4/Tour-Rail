@@ -11,15 +11,18 @@ services:
       - key: OSRM_BASE_URL
         value: https://router.project-osrm.org
       - key: ALLOWED_ORIGINS
-        value: http://localhost:5173,http://localhost:4173
+        value: http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:4173
+      - key: ALLOWED_ORIGIN_REGEX
+        value: ^https://.*\.onrender\.com$
 
   - type: web
     name: tour-rail-web
     runtime: static
     rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    pullRequestPreviewsEnabled: true
+    buildCommand: npm ci && npm run build
+    staticPublishPath: frontend/dist
+    previews:
+      generation: automatic
     envVars:
       - key: VITE_API_BASE_URL
         fromService:

@@ -29,11 +29,13 @@ ALLOWED_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"^https://.*\.onrender\.com$")
 
 app = FastAPI(title=APP_NAME)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
