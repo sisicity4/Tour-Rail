@@ -1,65 +1,109 @@
-# null-health-demo
+# Tour-Rail
 
-FastAPIで「運動できなかった理由（null）」を記録し、理由に応じた最小の介入（10〜30秒の行動）を返すデモAPIです。成果指標は「0→1（空白が埋まった回数）」のみを扱います。
+Tour-Rail is a travel-route showcase app with a board-game mood. Users place stops on a map, enter traveler counts for `male`, `female`, and `other`, then watch a car carry those groups across the route with a life-game style progress rail.
 
-## 使い方
+The repository is split for Render deployment:
 
-### 1) 依存関係のインストール
+- `backend/`: FastAPI API for health, route proxying, and frontend config
+- `frontend/`: React + Vite static site
+
+## Local development
+
+### Backend
+
 ```bash
-python -m venv .venv
+cd backend
+python3 -m venv .venv
 source .venv/bin/activate
-pip install fastapi uvicorn
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 ```
 
-### 2) 起動
+Backend endpoints:
+
+- `GET /health`
+- `GET /config`
+- `POST /route`
+
+### Frontend
+
 ```bash
-uvicorn main:app --reload
+cd frontend
+npm install
+npm run dev
 ```
 
-起動後、`http://localhost:8000/docs` でSwagger UIを確認できます。
+Create `frontend/.env.local` when running against a non-default backend:
 
-## API使用例（curl）
-
-### 1) ヘルスチェック
 ```bash
-curl http://localhost:8000/health
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-### 2) 今日のチェックイン（did_move=0 + reason必須）
+The frontend defaults to `http://localhost:8000` in local development.
+
+## Backend contract
+
+### `GET /health`
+
+Returns service status.
+
+### `GET /config`
+
+Returns default animation settings, category colors, and default map center.
+
+### `POST /route`
+
+Request:
+
+```json
+{
+  "waypoints": [
+    { "lat": 35.6812, "lng": 139.7671 },
+    { "lat": 35.6895, "lng": 139.6917 }
+  ]
+}
+```
+
+Response includes:
+
+- `path`: normalized coordinate list
+- `waypoints`: original stops
+- `distance_m`
+- `duration_s`
+- `segment_count`
+
+## Render deployment
+
+This repo includes a root `render.yaml` for a 2-service setup:
+
+1. `tour-rail-api` as a Python `Web Service`
+2. `tour-rail-web` as a `Static Site`
+
+Render will inject the backend URL into the frontend as `VITE_API_BASE_URL`.
+
+If you deploy manually instead of using the Blueprint:
+
+- Backend root directory: `backend`
+- Backend build command: `pip install -r requirements.txt`
+- Backend start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Frontend root directory: `frontend`
+- Frontend build command: `npm install && npm run build`
+- Frontend publish directory: `frontend/dist`
+
+For SPA routing on Render Static Sites, keep the rewrite rule from `render.yaml`.
+
+## Testing
+
+### Backend
+
 ```bash
-curl -X POST http://localhost:8000/checkins \
-  -H "Content-Type: application/json" \
-  -d '{"user_id":"u1","did_move":false,"reason":"tired","hour_bucket":"evening"}'
+cd backend
+python -m unittest discover -s tests
 ```
 
-### 3) 次の介入を取得
+### Frontend
+
 ```bash
-curl "http://localhost:8000/fix/next?user_id=u1"
+cd frontend
+npm run build
 ```
-
-### 4) 介入を実行したら完了報告
-```bash
-curl -X POST http://localhost:8000/fixes/1/done
-```
-
-### 5) 今日の統計
-```bash
-curl "http://localhost:8000/stats/today?user_id=u1"
-```
-
-### 6) 直近7日サマリー
-```bash
-curl "http://localhost:8000/stats/summary?user_id=u1&days=7"
-```
-
-## 典型フロー
-1. `/checkins` に `did_move=false` で理由を送信
-2. `/fix/next` で理由に応じた介入を取得（提案ログが保存される）
-3. 実行できたら `/fixes/{id}/done` で完了報告
-4. `/stats/today` の `filled` が「空白が埋まった回数」
-
-## データモデル
-- checkins
-  - id, user_id, date, did_move, reason, hour_bucket, created_at
-- fixes
-  - id, user_id, checkin_id, fix_id, fix_title, level, did_fix, created_at

@@ -1,7 +1,0 @@
-{
-  "name": "Walk Path Animator",
-  "description": "An interactive map tool that allows users to trace walking routes and generate beautiful 0-3 second animations of their journey, enhanced by AI-generated walk descriptions.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
-}
