@@ -18,13 +18,17 @@ class TourRailApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["ok"], True)
 
-    def test_config_returns_expected_categories(self) -> None:
+    def test_config_returns_frontend_bootstrap_settings(self) -> None:
         response = self.client.get("/config")
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertIn("male", body["category_colors"])
-        self.assertIn("female", body["category_colors"])
-        self.assertIn("other", body["category_colors"])
+        self.assertEqual(body["app_name"], "Tour-Rail")
+        self.assertIn("default_animation_seconds", body)
+        self.assertIn("route_color", body)
+        self.assertIn("board_color", body)
+        self.assertIn("map_center", body)
+        self.assertIn("map_zoom", body)
+        self.assertNotIn("category_colors", body)
 
     def test_route_validates_missing_waypoints(self) -> None:
         response = self.client.post("/route", json={})

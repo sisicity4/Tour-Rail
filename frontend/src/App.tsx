@@ -1,36 +1,35 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import MapBoard from "./components/MapBoard";
 import { fetchConfig, fetchRoute } from "./api";
 import type {
   AppConfig,
-  CategoryColorMap,
   RoutePath,
-  TravelerCounts,
   VehicleAnimationState,
+  VehicleType,
   Waypoint,
 } from "./types";
-
-const fallbackColors: CategoryColorMap = {
-  male: "#2f7af8",
-  female: "#ff5c8a",
-  other: "#ffb703",
-};
 
 const fallbackConfig: AppConfig = {
   app_name: "Tour-Rail",
   default_animation_seconds: 8,
-  category_colors: fallbackColors,
   route_color: "#26547c",
   board_color: "#f4d35e",
   map_center: { lat: 35.6812, lng: 139.7671 },
   map_zoom: 12,
 };
 
-const initialTravelers: TravelerCounts = {
-  male: 2,
-  female: 2,
-  other: 1,
-};
+const initialTravelerCount = 5;
+
+const vehicleOptions: Array<{
+  key: VehicleType;
+  icon: string;
+  label: string;
+  caption: string;
+}> = [
+  { key: "car", icon: "🚗", label: "車", caption: "遠くまで" },
+  { key: "walk", icon: "🚶", label: "徒歩", caption: "ゆっくり歩く" },
+  { key: "bike", icon: "🚲", label: "自転車", caption: "風を切る" },
+];
 
 function formatDistance(distance: number): string {
   if (distance < 1000) {
@@ -66,9 +65,26 @@ function getClosestStopIndex(route: RoutePath | null, progress: number): number 
   );
 }
 
+function getRouteFlavor(stopCount: number): string {
+  if (stopCount === 0) {
+    return "地図からはじめる";
+  }
+  if (stopCount === 1) {
+    return "次はゴール";
+  }
+  if (stopCount < 4) {
+    return "小さな旅";
+  }
+  if (stopCount < 6) {
+    return "寄り道あり";
+  }
+  return "たっぷり旅";
+}
+
 export default function App() {
   const [config, setConfig] = useState<AppConfig>(fallbackConfig);
-  const [travelers, setTravelers] = useState<TravelerCounts>(initialTravelers);
+  const [travelerCount, setTravelerCount] = useState(initialTravelerCount);
+  const [vehicleType, setVehicleType] = useState<VehicleType>("car");
   const [route, setRoute] = useState<RoutePath | null>(null);
   const [routeStops, setRouteStops] = useState<Waypoint[]>([]);
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
@@ -80,8 +96,10 @@ export default function App() {
     duration: fallbackConfig.default_animation_seconds,
   });
 
-  const totalTravelers = travelers.male + travelers.female + travelers.other;
   const activeStopIndex = getClosestStopIndex(route, animation.progress);
+  const selectedVehicle = vehicleOptions.find((option) => option.key === vehicleType) ?? vehicleOptions[0];
+  const routeFlavor = getRouteFlavor(routeStops.length);
+  const canRunRoute = Boolean(route && route.path.length >= 2 && !isRouting);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +117,7 @@ export default function App() {
         }));
       } catch {
         if (!cancelled) {
-          setError("設定の取得に失敗したため、ローカル既定値で表示しています。");
+          setError("設定を読み込めませんでした。今は仮の設定で表示しています。");
         }
       } finally {
         if (!cancelled) {
@@ -140,21 +158,8 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [animation.duration, animation.isAnimating]);
 
-  const vibe = useMemo(() => {
-    if (routeStops.length === 0) {
-      return "準備中";
-    }
-    if (routeStops.length < 3) {
-      return "街歩き";
-    }
-    if (routeStops.length < 5) {
-      return "寄り道たっぷり";
-    }
-    return "ロングツアー";
-  }, [routeStops.length]);
-
   async function handleAddWaypoint(point: Waypoint) {
-    if (isRouting) {
+    if (isRouting || animation.isAnimating) {
       return;
     }
 
@@ -180,7 +185,7 @@ export default function App() {
       const builtRoute = await fetchRoute(nextStops);
       setRoute(builtRoute);
     } catch {
-      setError("経路の取得に失敗しました。数秒後に再度試してください。");
+      setError("道をうまく引けませんでした。少ししてもう一度どうぞ。");
       setRoute({
         waypoints: nextStops,
         path: nextStops,
@@ -193,11 +198,8 @@ export default function App() {
     }
   }
 
-  function updateTravelers(group: keyof TravelerCounts, delta: number) {
-    setTravelers((current) => ({
-      ...current,
-      [group]: Math.max(0, current[group] + delta),
-    }));
+  function updateTravelerCount(delta: number) {
+    setTravelerCount((current) => Math.max(1, current + delta));
   }
 
   function clearRoute() {
@@ -208,7 +210,7 @@ export default function App() {
   }
 
   function startAnimation() {
-    if (!route || route.path.length < 2) {
+    if (!canRunRoute) {
       return;
     }
 
@@ -219,79 +221,83 @@ export default function App() {
     }));
   }
 
-  const statCards = [
-    { label: "Travelers", value: `${totalTravelers} riders` },
-    { label: "Stops", value: `${routeStops.length} squares` },
-    { label: "Mood", value: vibe },
-    { label: "Track", value: route ? formatDistance(route.distance_m) : "-" },
-  ];
+  function addNearbyGoal() {
+    const lastStop = routeStops[routeStops.length - 1] ?? config.map_center;
+    void handleAddWaypoint({
+      lat: lastStop.lat + 0.018,
+      lng: lastStop.lng + 0.018,
+    });
+  }
+
+  const mapHint = isRouting
+    ? "ルートを探しています"
+    : animation.isAnimating
+      ? "いま移動中"
+      : routeStops.length < 2
+        ? "地図にスタートとゴールを置く"
+        : "寄り道するか、このまま出発";
 
   return (
-    <div className="app-shell">
-      <header className="hero">
+    <div className="app-shell quest-app">
+      <header className="hero quest-hero">
         <div className="hero__copy">
-          <p className="eyebrow">Render-ready travel animation</p>
+          <p className="eyebrow">旅のルートを作る</p>
           <h1>Tour-Rail</h1>
           <p className="hero__lede">
-            人生ゲームの盤面みたいな旅の導線に、3カテゴリの旅行者を乗せた車を走らせる。
-            地図上の経路とボード風の進行演出を一つの画面で見せるためのショーケースです。
+            行きたい場所を地図に置くと、{selectedVehicle.icon} {selectedVehicle.label}がその道をたどります。
+            旅の流れが、すごろくみたいに見えてきます。
           </p>
         </div>
-        <div className="hero__meta">
-          <div className="hero__pill">Hybrid Map + Board</div>
-          <div className="hero__pill">Male / Female / Other</div>
-          <div className="hero__pill">Render Static + API</div>
-        </div>
-        <div className="hero__stickers" aria-hidden="true">
-          <span className="sticker sticker--ticket">BOARD TRIP</span>
-          <span className="sticker sticker--star">PLAYFUL ROUTE</span>
-          <span className="sticker sticker--car">VROOM!</span>
+        <div className="hero__meta quest-hero__hud">
+          <div className="hero__pill">{routeFlavor}</div>
+          <div className="hero__pill">{selectedVehicle.icon} {selectedVehicle.label}</div>
+          <div className="hero__pill">{travelerCount}人で行く</div>
         </div>
       </header>
 
-      <main className="layout">
-        <section className="panel panel--controls">
+      <main className="quest-shell">
+        <section className="panel quest-control-panel" aria-label="旅の設定">
           <div className="panel__header">
             <div>
-              <p className="panel__kicker">Traveler Input</p>
-              <h2>乗客の編成</h2>
+              <p className="panel__kicker">準備</p>
+              <h2>だれと行く？</h2>
             </div>
             <button className="ghost-button" onClick={clearRoute}>
-              Clear Route
+              やり直す
             </button>
           </div>
 
-          <div className="traveler-grid">
-            {(
-              [
-                ["male", "男性"],
-                ["female", "女性"],
-                ["other", "その他"],
-              ] as const
-            ).map(([key, label]) => (
-              <article key={key} className="traveler-card">
-                <div
-                  className="traveler-card__badge"
-                  style={{ backgroundColor: config.category_colors[key] }}
-                />
-                <div className="traveler-card__body">
-                  <p>{label}</p>
-                  <strong>{travelers[key]}</strong>
-                  <small className="traveler-card__caption">
-                    {key === "male" ? "blue riders" : key === "female" ? "pink riders" : "gold riders"}
-                  </small>
-                </div>
-                <div className="counter">
-                  <button onClick={() => updateTravelers(key, -1)}>-</button>
-                  <button onClick={() => updateTravelers(key, 1)}>+</button>
-                </div>
-              </article>
+          <div className="vehicle-switcher" role="radiogroup" aria-label="移動手段">
+            {vehicleOptions.map((option) => (
+              <button
+                key={option.key}
+                className={`vehicle-tab ${vehicleType === option.key ? "vehicle-tab--active" : ""}`}
+                onClick={() => setVehicleType(option.key)}
+                role="radio"
+                aria-checked={vehicleType === option.key}
+              >
+                <span>{option.icon}</span>
+                <strong>{option.label}</strong>
+                <small>{option.caption}</small>
+              </button>
             ))}
           </div>
 
+          <article className="party-counter" aria-label="旅行者数">
+            <div>
+              <p>旅行者</p>
+              <strong>{travelerCount}人</strong>
+              <small>一緒に旅する人数</small>
+            </div>
+            <div className="counter">
+              <button onClick={() => updateTravelerCount(-1)}>-</button>
+              <button onClick={() => updateTravelerCount(1)}>+</button>
+            </div>
+          </article>
+
           <div className="slider-block">
             <div className="slider-block__header">
-              <span>Animation Tempo</span>
+              <span>速さ</span>
               <strong>{animation.duration.toFixed(1)}s</strong>
             </div>
             <input
@@ -308,46 +314,43 @@ export default function App() {
               }
             />
           </div>
+        </section>
 
-          <div className="panel__actions">
-            <button
-              className="primary-button"
-              onClick={startAnimation}
-              disabled={!route || route.path.length < 2 || isRouting}
-            >
-              {animation.isAnimating ? "Rolling..." : "Start Toy Ride"}
-            </button>
-            <div className="status-note">
-              {isLoadingConfig
-                ? "設定を読み込み中..."
-                : isRouting
-                  ? "経路を計算中..."
-                  : "地図クリックで停車駅を追加"}
+        <section className="panel quest-map-panel" aria-label="ルート作成">
+          <div className="quest-map-header">
+            <div>
+              <p className="panel__kicker">地図</p>
+              <h2>行き先を置く</h2>
             </div>
+            <div className="quest-stats">
+              <div>
+                <span>スポット</span>
+                <strong>{routeStops.length}</strong>
+              </div>
+              <div>
+                <span>距離</span>
+                <strong>{route ? formatDistance(route.distance_m) : "-"}</strong>
+              </div>
+              <div>
+                <span>時間</span>
+                <strong>{route ? formatDuration(route.duration_s) : "-"}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="quest-action-bar">
+            <button className="primary-button" onClick={startAnimation} disabled={!canRunRoute}>
+              {animation.isAnimating ? "移動中" : routeStops.length < 2 ? "2か所で出発" : "出発する"}
+            </button>
+            {routeStops.length === 1 ? (
+              <button className="map-jump-button" onClick={addNearbyGoal} disabled={isRouting}>
+                ゴールを追加
+              </button>
+            ) : null}
+            <p>{isLoadingConfig ? "準備しています" : mapHint}</p>
           </div>
 
           {error ? <p className="error-banner">{error}</p> : null}
-
-          <div className="stat-grid">
-            {statCards.map((card) => (
-              <div key={card.label} className="stat-card">
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="panel panel--map">
-          <div className="panel__header">
-            <div>
-              <p className="panel__kicker">Route Builder</p>
-              <h2>旅の盤面</h2>
-            </div>
-            <div className="summary-chip">
-              {route ? `ETA ${formatDuration(route.duration_s)}` : "Select stops"}
-            </div>
-          </div>
 
           <MapBoard
             routePath={route?.path ?? []}
@@ -358,15 +361,28 @@ export default function App() {
             mapCenter={config.map_center}
             mapZoom={config.map_zoom}
             routeColor={config.route_color}
-            categoryColors={config.category_colors}
-            travelerCounts={travelers}
+            travelerCount={travelerCount}
+            vehicleType={vehicleType}
+            canAddWaypoint={!animation.isAnimating}
+            hintText={mapHint}
           />
+
+          <div className="route-story">
+            {routeStops.length === 0 ? (
+              <strong>まずは地図にスタートを置きます。</strong>
+            ) : routeStops.length === 1 ? (
+              <strong>次にゴールを置くと、道がつながります。</strong>
+            ) : (
+              <strong>
+                {routeFlavor}: {travelerCount}人で
+                {route ? ` ${formatDistance(route.distance_m)} ` : " "}の道をたどります。
+              </strong>
+            )}
+          </div>
 
           <div className="board-rail" style={{ ["--board-color" as string]: config.board_color }}>
             {routeStops.length === 0 ? (
-              <div className="board-rail__empty">
-                Start と Goal の間に寄り道を追加して、旅のマス目を作ってください。
-              </div>
+              <div className="board-rail__empty">置いた場所が、ここに順番に並びます。</div>
             ) : (
               routeStops.map((_, index) => {
                 const isActive = index <= activeStopIndex;
@@ -378,8 +394,8 @@ export default function App() {
                       isCurrent ? "board-stop--current" : ""
                     }`}
                   >
-                    <span className="board-stop__step">STOP {index + 1}</span>
-                    <strong>{index === 0 ? "Start" : index === routeStops.length - 1 ? "Goal" : "Via"}</strong>
+                    <span className="board-stop__step">スポット {index + 1}</span>
+                    <strong>{index === 0 ? "出発" : index === routeStops.length - 1 ? "ゴール" : "寄り道"}</strong>
                     <small>
                       {routeStops[index].lat.toFixed(3)}, {routeStops[index].lng.toFixed(3)}
                     </small>
@@ -390,6 +406,13 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      <div className="mobile-runner-bar">
+        <span>{routeFlavor}</span>
+        <button className="primary-button" onClick={startAnimation} disabled={!canRunRoute}>
+          {animation.isAnimating ? "移動中" : "出発"}
+        </button>
+      </div>
     </div>
   );
 }

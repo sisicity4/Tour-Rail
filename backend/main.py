@@ -13,11 +13,6 @@ APP_NAME = "Tour-Rail API"
 DEFAULT_MAP_CENTER = Waypoint(lat=35.6812, lng=139.7671)
 DEFAULT_MAP_ZOOM = 12
 DEFAULT_ANIMATION_SECONDS = 8.0
-CATEGORY_COLORS = {
-    "male": "#2f7af8",
-    "female": "#ff5c8a",
-    "other": "#ffb703",
-}
 ROUTE_COLOR = "#26547c"
 BOARD_COLOR = "#f4d35e"
 OSRM_BASE_URL = os.getenv("OSRM_BASE_URL", "https://router.project-osrm.org").rstrip("/")
@@ -52,7 +47,6 @@ async def config() -> ConfigResponse:
     return ConfigResponse(
         app_name="Tour-Rail",
         default_animation_seconds=DEFAULT_ANIMATION_SECONDS,
-        category_colors=CATEGORY_COLORS,
         route_color=ROUTE_COLOR,
         board_color=BOARD_COLOR,
         map_center=DEFAULT_MAP_CENTER,

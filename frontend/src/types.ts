@@ -3,12 +3,6 @@ export interface Waypoint {
   lng: number;
 }
 
-export interface TravelerCounts {
-  male: number;
-  female: number;
-  other: number;
-}
-
 export interface RoutePath {
   waypoints: Waypoint[];
   path: Waypoint[];
@@ -20,7 +14,6 @@ export interface RoutePath {
 export interface AppConfig {
   app_name: string;
   default_animation_seconds: number;
-  category_colors: CategoryColorMap;
   route_color: string;
   board_color: string;
   map_center: Waypoint;
@@ -33,4 +26,4 @@ export interface VehicleAnimationState {
   duration: number;
 }
 
-export type CategoryColorMap = Record<keyof TravelerCounts, string>;
+export type VehicleType = "car" | "walk" | "bike";

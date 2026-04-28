@@ -23,7 +23,6 @@ class RouteResponse(BaseModel):
 class ConfigResponse(BaseModel):
     app_name: str
     default_animation_seconds: float
-    category_colors: dict[str, str]
     route_color: str
     board_color: str
     map_center: Waypoint
