@@ -13,7 +13,7 @@ services:
       - key: ALLOWED_ORIGINS
         value: http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:4173
       - key: ALLOWED_ORIGIN_REGEX
-        value: ^https://.*\.onrender\.com$
+        value: ^https://[a-z0-9-]+\.(onrender\.com|vercel\.app)$
 
   - type: web
     name: tour-rail-web

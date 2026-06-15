@@ -1,5 +1,23 @@
 # Tour-Rail
 
+> 地図にスポットを置くと、選んだ移動手段がルートをたどる ── ボードゲーム風の旅行ルート可視化アプリ。
+> **React + Vite フロントエンド / FastAPI バックエンド / OSRM 外部 API 連携 / フロント・バック分離デプロイ** を 1 つで示すポートフォリオ作品です。
+
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![OSRM](https://img.shields.io/badge/OSRM-routing-5A29E4)
+![Render](https://img.shields.io/badge/Render-deploy-46E3B7?logo=render&logoColor=white)
+
+![Tour-Rail デモ](docs/assets/tour-rail-demo.gif)
+
+**🔗 リンク:** ライブデモ（公開準備中 — 手順は [HANDOFF.md](HANDOFF.md)） ・ [アーキテクチャ](docs/architecture.md) ・ [デプロイ手順](docs/deployment.md)
+
+---
+
 Tour-Rail は、地図上で旅行ルートを作成し、ボードゲーム風の演出で移動を可視化する Web アプリです。
 
 就職活動のポートフォリオとして、単に画面を作るだけでなく、フロントエンド、バックエンド、外部 API 連携、デプロイ、動作確認までを一通り実装できることを示す目的で制作しています。
@@ -7,6 +25,8 @@ Tour-Rail は、地図上で旅行ルートを作成し、ボードゲーム風�
 ## 概要
 
 ユーザーは地図をクリックしてスタート、ゴール、寄り道スポットを追加し、旅行者数と移動手段を選びます。ルート作成後は、選択した車・徒歩・自転車のアイコンがルートに沿って移動し、ボードゲーム風のカードでも現在地が分かるようになっています。
+
+![Tour-Rail の画面](docs/assets/tour-rail-screenshot.jpg)
 
 このアプリは、旅行計画を「距離や時間の情報」だけでなく、「どのルートをどう移動するのか」という体験として見せることを目指しています。
 
@@ -63,7 +83,7 @@ render.yaml Render Blueprint 設定
 5. バックエンドがルート、距離、所要時間を正規化して返す
 6. フロントエンドが地図、移動アニメーション、ボード風カードを更新する
 
-詳細は [docs/architecture.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/architecture.md) にまとめています。
+詳細は [docs/architecture.md](docs/architecture.md) にまとめています。
 
 ## API
 
@@ -197,7 +217,7 @@ npm run build
 
 ## Render へのデプロイ手順
 
-このリポジトリには、Render Blueprint 用の [render.yaml](/Users/taiga/Documents/GitHub/Tour-Rail/render.yaml) を用意しています。
+このリポジトリには、Render Blueprint 用の [render.yaml](render.yaml) を用意しています。
 
 作成されるサービスは次の 2 つです。
 
@@ -232,7 +252,7 @@ Health check path: /health
 ```text
 OSRM_BASE_URL=https://router.project-osrm.org
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:4173
-ALLOWED_ORIGIN_REGEX=^https://.*\.onrender\.com$
+ALLOWED_ORIGIN_REGEX=^https://[a-z0-9-]+\.(onrender\.com|vercel\.app)$
 ```
 
 フロントエンド:
@@ -278,6 +298,6 @@ SPA として直接 URL を開いても表示できるように、Static Site �
 
 ## 補足資料
 
-- [AGENTS.md](/Users/taiga/Documents/GitHub/Tour-Rail/AGENTS.md)
-- [docs/architecture.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/architecture.md)
-- [docs/deployment.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/deployment.md)
+- [AGENTS.md](AGENTS.md)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/deployment.md](docs/deployment.md)

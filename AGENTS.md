@@ -5,10 +5,10 @@
 ## 最初に読むもの
 
 - まずこのファイルを読む。
-- 人間向けのセットアップ説明が必要な場合だけ [README.md](/Users/taiga/Documents/GitHub/Tour-Rail/README.md) を読む。
+- 人間向けのセットアップ説明が必要な場合だけ [README.md](README.md) を読む。
 - プロダクト仕様と構成は、必要に応じて次を参照する。
-  - [docs/architecture.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/architecture.md)
-  - [docs/deployment.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/deployment.md)
+  - [docs/architecture.md](docs/architecture.md)
+  - [docs/deployment.md](docs/deployment.md)
 
 ## リポジトリ構成
 
@@ -65,6 +65,6 @@
 - Render は 2 サービス構成。
   - `tour-rail-api`
   - `tour-rail-web`
-- CORS は localhost 系の開発URLと `*.onrender.com` を許可する。
+- CORS は localhost 系の開発URLと `*.onrender.com` / `*.vercel.app` を許可する。
 - フロントエンドは `VITE_API_BASE_URL` からバックエンドURLを受け取る。
 - UIは企業向けの無機質な見た目ではなく、意図的に遊びのある雰囲気を維持する。

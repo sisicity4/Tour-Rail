@@ -24,7 +24,7 @@ ALLOWED_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
-ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"^https://.*\.onrender\.com$")
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX", r"^https://[a-z0-9-]+\.(onrender\.com|vercel\.app)$")
 
 app = FastAPI(title=APP_NAME)
 app.add_middleware(
