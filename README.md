@@ -10,11 +10,13 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
 ![OSRM](https://img.shields.io/badge/OSRM-routing-5A29E4)
-![Render](https://img.shields.io/badge/Render-deploy-46E3B7?logo=render&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-deploy-000000?logo=vercel&logoColor=white)
 
 ![Tour-Rail デモ](docs/assets/tour-rail-demo.gif)
 
-**🔗 リンク:** ライブデモ（公開準備中 — 手順は [HANDOFF.md](HANDOFF.md)） ・ [アーキテクチャ](docs/architecture.md) ・ [デプロイ手順](docs/deployment.md)
+**🔗 ライブデモ: https://tour-rail-web.vercel.app** ・ [アーキテクチャ](docs/architecture.md) ・ [デプロイ手順](docs/deployment.md)
+
+> フロントエンド（Static Site）と FastAPI バックエンド（Serverless Function）を Vercel に分離デプロイしています。バックエンド API は https://tour-rail-api.vercel.app で公開しています。
 
 ---
 
@@ -61,7 +63,7 @@ Tour-Rail は、次のような場面で役立つ可能性があります。
 | バックエンド | FastAPI, Python |
 | ルーティング | OSRM |
 | デプロイ | Render Static Site, Render Web Service |
-| テスト | Python unittest, Vite build |
+| テスト | Python unittest（バックエンド）, Vitest（フロントエンド）, Vite build |
 
 リポジトリは Render で運用しやすいように、次の構成に分けています。
 
@@ -122,6 +124,18 @@ render.yaml Render Blueprint 設定
 - `distance_m`: 距離
 - `duration_s`: 所要時間
 - `segment_count`: 区間数
+
+## 設計上の判断（なぜこの構成か）
+
+ポートフォリオとして「動く」ことだけでなく「なぜそうしたか」を説明できる状態を重視しています。主な判断は次の通りです。
+
+- **フロントから OSRM を直接叩かず、FastAPI を1段噛ませた理由**
+  - OSRM のレスポンスをそのまま使うと、座標整形・距離/時間の単位処理がフロントに散らばる。バックエンドで `path` / `distance_m` / `duration_s` / `segment_count` に正規化し、フロントは表示に専念できるようにした。
+  - 公開 OSRM の CORS やレート制限に将来引きずられないよう、外部 API との境界をサーバー側に閉じ込めた。ここにキャッシュやルーティングエンジンの差し替えを後から足せる。
+- **フロント・バック分離デプロイ（Static Site + Web Service）にした理由**
+  - 静的フロントは CDN 配信で安く速く、API だけ別スケールできる。`render.yaml` の Blueprint で 2 サービスを一括管理し、バックエンド URL を `VITE_API_BASE_URL` としてビルド時に注入している。
+- **CORS を環境変数（`ALLOWED_ORIGINS` / `ALLOWED_ORIGIN_REGEX`）で制御している理由**
+  - ローカル・プレビュー・本番でオリジンが変わるため、コードを書き換えずに許可元を切り替えられるようにした。
 
 ## ローカルでの動作手順
 
@@ -195,13 +209,15 @@ python -m unittest discover -s tests
 
 ```bash
 cd frontend
-npm run build
+npm test        # Vitest による API クライアントの単体テスト
+npm run build   # 型チェック + 本番ビルド
 ```
 
 確認内容:
 
-- TypeScript と Vite のビルドが成功する
-- 本番配信用の `dist` が生成される
+- `src/api.ts` の `fetchConfig` / `fetchRoute` が正しいエンドポイントを叩き、レスポンスを整形して返す
+- バックエンドが異常系を返したときに例外を投げる
+- TypeScript と Vite のビルドが成功し、本番配信用の `dist` が生成される
 - 環境変数 `VITE_API_BASE_URL` を参照できる状態でビルドできる
 
 ### 手動確認
