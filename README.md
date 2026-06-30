@@ -1,5 +1,25 @@
 # Tour-Rail
 
+> 地図にスポットを置くと、選んだ移動手段がルートをたどる ── ボードゲーム風の旅行ルート可視化アプリ。
+> **React + Vite フロントエンド / FastAPI バックエンド / OSRM 外部 API 連携 / フロント・バック分離デプロイ** を 1 つで示すポートフォリオ作品です。
+
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![OSRM](https://img.shields.io/badge/OSRM-routing-5A29E4)
+![Vercel](https://img.shields.io/badge/Vercel-deploy-000000?logo=vercel&logoColor=white)
+
+![Tour-Rail デモ](docs/assets/tour-rail-demo.gif)
+
+**🔗 ライブデモ: https://tour-rail-web.vercel.app** ・ [アーキテクチャ](docs/architecture.md) ・ [デプロイ手順](docs/deployment.md)
+
+> フロントエンド（Static Site）と FastAPI バックエンド（Serverless Function）を Vercel に分離デプロイしています。バックエンド API は https://tour-rail-api.vercel.app で公開しています。
+
+---
+
 Tour-Rail は、地図上で旅行ルートを作成し、ボードゲーム風の演出で移動を可視化する Web アプリです。
 
 就職活動のポートフォリオとして、単に画面を作るだけでなく、フロントエンド、バックエンド、外部 API 連携、デプロイ、動作確認までを一通り実装できることを示す目的で制作しています。
@@ -7,6 +27,8 @@ Tour-Rail は、地図上で旅行ルートを作成し、ボードゲーム風�
 ## 概要
 
 ユーザーは地図をクリックしてスタート、ゴール、寄り道スポットを追加し、旅行者数と移動手段を選びます。ルート作成後は、選択した車・徒歩・自転車のアイコンがルートに沿って移動し、ボードゲーム風のカードでも現在地が分かるようになっています。
+
+![Tour-Rail の画面](docs/assets/tour-rail-screenshot.jpg)
 
 このアプリは、旅行計画を「距離や時間の情報」だけでなく、「どのルートをどう移動するのか」という体験として見せることを目指しています。
 
@@ -41,7 +63,7 @@ Tour-Rail は、次のような場面で役立つ可能性があります。
 | バックエンド | FastAPI, Python |
 | ルーティング | OSRM |
 | デプロイ | Render Static Site, Render Web Service |
-| テスト | Python unittest, Vite build |
+| テスト | Python unittest（バックエンド）, Vitest（フロントエンド）, Vite build |
 
 リポジトリは Render で運用しやすいように、次の構成に分けています。
 
@@ -63,7 +85,7 @@ render.yaml Render Blueprint 設定
 5. バックエンドがルート、距離、所要時間を正規化して返す
 6. フロントエンドが地図、移動アニメーション、ボード風カードを更新する
 
-詳細は [docs/architecture.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/architecture.md) にまとめています。
+詳細は [docs/architecture.md](docs/architecture.md) にまとめています。
 
 ## API
 
@@ -102,6 +124,18 @@ render.yaml Render Blueprint 設定
 - `distance_m`: 距離
 - `duration_s`: 所要時間
 - `segment_count`: 区間数
+
+## 設計上の判断（なぜこの構成か）
+
+ポートフォリオとして「動く」ことだけでなく「なぜそうしたか」を説明できる状態を重視しています。主な判断は次の通りです。
+
+- **フロントから OSRM を直接叩かず、FastAPI を1段噛ませた理由**
+  - OSRM のレスポンスをそのまま使うと、座標整形・距離/時間の単位処理がフロントに散らばる。バックエンドで `path` / `distance_m` / `duration_s` / `segment_count` に正規化し、フロントは表示に専念できるようにした。
+  - 公開 OSRM の CORS やレート制限に将来引きずられないよう、外部 API との境界をサーバー側に閉じ込めた。ここにキャッシュやルーティングエンジンの差し替えを後から足せる。
+- **フロント・バック分離デプロイ（Static Site + Web Service）にした理由**
+  - 静的フロントは CDN 配信で安く速く、API だけ別スケールできる。`render.yaml` の Blueprint で 2 サービスを一括管理し、バックエンド URL を `VITE_API_BASE_URL` としてビルド時に注入している。
+- **CORS を環境変数（`ALLOWED_ORIGINS` / `ALLOWED_ORIGIN_REGEX`）で制御している理由**
+  - ローカル・プレビュー・本番でオリジンが変わるため、コードを書き換えずに許可元を切り替えられるようにした。
 
 ## ローカルでの動作手順
 
@@ -175,13 +209,15 @@ python -m unittest discover -s tests
 
 ```bash
 cd frontend
-npm run build
+npm test        # Vitest による API クライアントの単体テスト
+npm run build   # 型チェック + 本番ビルド
 ```
 
 確認内容:
 
-- TypeScript と Vite のビルドが成功する
-- 本番配信用の `dist` が生成される
+- `src/api.ts` の `fetchConfig` / `fetchRoute` が正しいエンドポイントを叩き、レスポンスを整形して返す
+- バックエンドが異常系を返したときに例外を投げる
+- TypeScript と Vite のビルドが成功し、本番配信用の `dist` が生成される
 - 環境変数 `VITE_API_BASE_URL` を参照できる状態でビルドできる
 
 ### 手動確認
@@ -197,7 +233,7 @@ npm run build
 
 ## Render へのデプロイ手順
 
-このリポジトリには、Render Blueprint 用の [render.yaml](/Users/taiga/Documents/GitHub/Tour-Rail/render.yaml) を用意しています。
+このリポジトリには、Render Blueprint 用の [render.yaml](render.yaml) を用意しています。
 
 作成されるサービスは次の 2 つです。
 
@@ -232,7 +268,7 @@ Health check path: /health
 ```text
 OSRM_BASE_URL=https://router.project-osrm.org
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173,http://127.0.0.1:4173
-ALLOWED_ORIGIN_REGEX=^https://.*\.onrender\.com$
+ALLOWED_ORIGIN_REGEX=^https://[a-z0-9-]+\.(onrender\.com|vercel\.app)$
 ```
 
 フロントエンド:
@@ -278,6 +314,6 @@ SPA として直接 URL を開いても表示できるように、Static Site �
 
 ## 補足資料
 
-- [AGENTS.md](/Users/taiga/Documents/GitHub/Tour-Rail/AGENTS.md)
-- [docs/architecture.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/architecture.md)
-- [docs/deployment.md](/Users/taiga/Documents/GitHub/Tour-Rail/docs/deployment.md)
+- [AGENTS.md](AGENTS.md)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/deployment.md](docs/deployment.md)

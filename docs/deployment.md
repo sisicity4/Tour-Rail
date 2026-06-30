@@ -2,7 +2,7 @@
 
 ## Render Blueprint
 
-設定の基準は [render.yaml](/Users/taiga/Documents/GitHub/Tour-Rail/render.yaml) です。
+設定の基準は [render.yaml](../render.yaml) です。
 
 作成されるサービス:
 
@@ -31,6 +31,7 @@
 
 - localhost 系の開発URL
 - `*.onrender.com` の Render 本番URL
+- `*.vercel.app` の Vercel 公開URL（常時稼働デモ用）
 
 本番環境でフロントエンドから API に接続できない場合は、次を確認します。
 

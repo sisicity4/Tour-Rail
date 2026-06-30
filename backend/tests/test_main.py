@@ -111,6 +111,33 @@ class TourRailApiTests(unittest.TestCase):
             "https://tour-rail-web.onrender.com",
         )
 
+    def test_cors_allows_vercel_origin(self) -> None:
+        response = self.client.options(
+            "/route",
+            headers={
+                "Origin": "https://tour-rail.vercel.app",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"),
+            "https://tour-rail.vercel.app",
+        )
+
+    def test_cors_rejects_spoofed_origin(self) -> None:
+        response = self.client.options(
+            "/route",
+            headers={
+                "Origin": "https://tour-rail.vercel.app.evil.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        self.assertNotEqual(
+            response.headers.get("access-control-allow-origin"),
+            "https://tour-rail.vercel.app.evil.com",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

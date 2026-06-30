@@ -185,7 +185,7 @@ export default function App() {
       const builtRoute = await fetchRoute(nextStops);
       setRoute(builtRoute);
     } catch {
-      setError("道をうまく引けませんでした。少ししてもう一度どうぞ。");
+      setError("道をうまく引けませんでした。デモのバックエンドは起動に最大30秒ほどかかる場合があります。少し待ってもう一度どうぞ。");
       setRoute({
         waypoints: nextStops,
         path: nextStops,
@@ -290,8 +290,8 @@ export default function App() {
               <small>一緒に旅する人数</small>
             </div>
             <div className="counter">
-              <button onClick={() => updateTravelerCount(-1)}>-</button>
-              <button onClick={() => updateTravelerCount(1)}>+</button>
+              <button aria-label="旅行者を減らす" onClick={() => updateTravelerCount(-1)}>-</button>
+              <button aria-label="旅行者を増やす" onClick={() => updateTravelerCount(1)}>+</button>
             </div>
           </article>
 
